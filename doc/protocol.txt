@@ -1,0 +1,13 @@
+Reset
+=====
+Cube pulses DIRSTB, drive asserts DIDSTRB and holds it till ready.
+
+Command
+=======
+Rise DIDSTRB at 9th byte, wait for DIDIR & !DIHSTRB, clock data out on falling edge of DIDSTRB, GC acks by asserting
+DIHSTRB before the last 3 bytes.
+Drop DIDSTRB when ready for next command.
+
+Cover
+=====
+DICOVER low on bootup = GC will try to read before starting the boot animation.

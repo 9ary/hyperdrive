@@ -1,0 +1,10 @@
+DID -- Data bus
+
+DIHSTRB -- Data strobe, rising edge
+DIDIR -- Direction - low: GC => drive, high: drive => GC
+DIBRK -- Cancel - active high
+DIRSTB -- Reset - active low
+
+DIDSTRB -- Data strobe, rising edge
+DIERRB -- Error - active low
+DICOVER -- Lid status - low when closed, high when open
