@@ -12,24 +12,7 @@ rule ccld
     command = $cc $cflags $ldflags $in -o $out
     description = CCLD $out
 
-rule bin
-    command = $objcopy -O binary $in $out
-    description = BIN $out
-
-rule romgen
-    command = ./romgen.sh $out $in
-    description = ROMGEN $out
-
-rule hostcc
-    command = $hostcc $hostcflags -MMD -MT $out -MF $out.d $in -o $out
-    description = HOSTCC $out
-    depfile = $out.d
-    deps = gcc
-
 include targets.ninja
-
-hostcc = gcc
-hostcflags = -Wall -Wextra -std=gnu99 -O2 -pipe
 
 cc = zpu-elf-gcc
 objcopy = zpu-elf-objcopy
@@ -37,4 +20,4 @@ objcopy = zpu-elf-objcopy
 cflags = -Wall -Wextra -pedantic -std=c99 -Os -pipe -Iinclude
 ldflags = -Ttoolchain/standalone-bsd.ld -Wl,--gc-sections -Wl,--relax -nostartfiles
 
-default $builddir/hyperdrive-rom.vhd
+default $builddir/hyperdrive.elf

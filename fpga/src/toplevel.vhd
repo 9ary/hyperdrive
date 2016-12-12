@@ -74,7 +74,7 @@ begin
     DICOVER <= 'Z';
     DID <= (others => 'Z');
 
-    rom : entity work.hyperdrive_rom
+    rom : entity work.zpurom
     generic map
     (
         maxAddrBitBRAM => maxAddrBitBRAM -- This needs to match the signal of the same name in the ZPU's instantiation.

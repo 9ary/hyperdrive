@@ -19,6 +19,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 # intermediate build files
+*_bd.bmm
 *.bgn
 *.bit
 *.bld
