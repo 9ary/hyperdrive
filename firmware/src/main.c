@@ -1,26 +1,17 @@
 #include <stdint.h>
+#include "sd.h"
+#include "spi.h"
+#include "uart.h"
 
-struct uart
-{
-    uint32_t c;
-    uint32_t status;
-};
+volatile uint32_t *led = (uint32_t *) 0xFFFFFE00;
 
-volatile struct uart *uart = (struct uart *) 0xFFFFFF00;
-uint32_t *led = (uint32_t *) 0xFFFFFE00;
+uint8_t readbuf[512];
 
 int main()
 {
+    puts("\x0CHyperdrive initializing...\r\n");
 
-    while (1)
-    {
-        if ((uart->status & 0x3) == 0x0)
-        {
-            uint32_t c = uart->c;
-            uart->c = c;
-            *led = ~*led;
-        }
-    }
+    sd_init();
 
     return 0;
 }

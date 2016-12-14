@@ -17,7 +17,7 @@ include targets.ninja
 cc = zpu-elf-gcc
 objcopy = zpu-elf-objcopy
 
-cflags = -Wall -Wextra -pedantic -std=c99 -Os -pipe -Iinclude
+cflags = -Wall -Wextra -pedantic -std=c99 -Os -pipe -Iinclude -fno-builtin
 ldflags = -Ttoolchain/standalone-bsd.ld -Wl,--gc-sections -Wl,--relax -nostartfiles
 
 default $builddir/hyperdrive.elf

@@ -32,7 +32,13 @@ entity hyperdrive is
         DICOVER : out std_logic; -- Lid state
 
         -- Data
-        DID : inout std_logic_vector(7 downto 0)
+        DID : inout std_logic_vector(7 downto 0);
+
+        -- SD card
+        sd_cs : out std_logic;
+        sd_clk : out std_logic;
+        sd_mosi : out std_logic;
+        sd_miso : in std_logic
     );
 end hyperdrive;
 
@@ -54,7 +60,7 @@ architecture Behavioral of hyperdrive is
 
     signal reset : std_logic;
 
-    constant dev_count : natural := 2;
+    constant dev_count : natural := 3;
     signal bus_selects : ZPUMuxSelects(0 to dev_count-1);
     signal bus_outs : ZPUMuxDevOuts(0 to dev_count-1);
     signal bus_in : ZPUDeviceIn;
@@ -64,6 +70,9 @@ architecture Behavioral of hyperdrive is
 
     signal gpio_sel : std_logic;
     signal gpio_outs : ZPUDeviceOut;
+
+    signal spi_sel : std_logic;
+    signal spi_outs : ZPUDeviceOut;
 
 begin
 
@@ -140,6 +149,24 @@ begin
         led => led
     );
 
+    spi: entity work.ZPU_SPI
+    generic map
+    (
+        SPIClockDiv => 2
+    )
+    port map
+    (
+        Clock => clk,
+        ZSelect => spi_sel,
+        ZPUBusIn => bus_in,
+        ZPUBusOut => spi_outs,
+
+        MOSI => sd_mosi,
+        MISO => sd_miso,
+        SClock => sd_clk,
+        SSelect => sd_cs
+    );
+
     bus_in.Reset <= reset;
     bus_in.mem_write <= mem_write;
     bus_in.mem_addr <= mem_addr;
@@ -148,12 +175,14 @@ begin
 
     bus_selects <= (
         0 => uart_sel,
-        1 => gpio_sel
+        1 => gpio_sel,
+        2 => spi_sel
     );
 
     bus_outs <= (
         0 => uart_outs,
-        1 => gpio_outs
+        1 => gpio_outs,
+        2 => spi_outs
     );
 
     busmux: entity work.ZPUBusMux
@@ -176,6 +205,7 @@ begin
     begin
         uart_sel <= '0';
         gpio_sel <= '0';
+        spi_sel <= '0';
     if mem_writeEnable = '1' or mem_readEnable = '1' then
         case mem_addr(31 downto 28) is
             when x"F" => -- peripheral space
@@ -184,6 +214,8 @@ begin
                         uart_sel <= '1';
                     when x"E" =>
                         gpio_sel <= '1';
+                    when x"D" =>
+                        spi_sel <= '1';
                     when others => null;
                 end case;
             when others => null;
