@@ -6,10 +6,10 @@ static struct spi *sd = (struct spi *) 0xFFFFFD00;
 
 static int is_sdhc;
 
-static uint8_t do_cmd(uint8_t idx, uint32_t arg, uint8_t crc)
+static uint32_t do_cmd(uint32_t idx, uint32_t arg, uint32_t crc)
 {
     // Wait for card ready
-    uint8_t ret = 0;
+    uint32_t ret = 0;
     if (idx)
         while ((ret = spi_dobyte(sd, 0xFF)) == 0);
 
@@ -36,7 +36,7 @@ void sd_init(void)
     do_cmd(0, 0, 0x95); // CMD0, CRC needs to be correct since we're still in native mode
 
     // Check for SDCv2+
-    uint8_t r = do_cmd(8, 0x1AA, 0x87);
+    uint32_t r = do_cmd(8, 0x1AA, 0x87);
     if (r == 1) // Are we in idle mode with no other errors?
     {
         uint32_t r7;

@@ -11,7 +11,7 @@ void spi_cs(struct spi *spi, int state)
         spi->flags &= ~SPI_FLAG_SSEL;
 }
 
-uint8_t spi_dobyte(struct spi *spi, uint8_t byte)
+uint32_t spi_dobyte(struct spi *spi, uint32_t byte)
 {
     spi->data = byte;
     return spi->fastdata;
@@ -35,8 +35,5 @@ void spi_readbuf32(struct spi *spi, void *buf, unsigned int size)
 {
     uint32_t *buf_ = buf;
     for (unsigned int i = 0; i < size; i++)
-    {
-        spi->data = 0xFF;
-        buf_[i] = spi->fastdata;
-    }
+        buf_[i] = spi_dobyte(spi, 0xFF);
 }
