@@ -77,16 +77,16 @@ void sd_init(void)
     puts("SD init done\r\n");
 }
 
-void sd_read(uint32_t lba, uint8_t *buf)
+void sd_read(uint32_t lba, uint32_t *buf)
 {
     if (is_sdhc == 0)
         lba = lba << 9;
 
     do_cmd(17, lba, 1);
 
-    uint8_t byte;
+    uint32_t byte;
     while ((byte = spi_dobyte(sd, 0xFF)) != 0xFE);
-    spi_readbuf(sd, buf, 512);
+    spi_readbuf32(sd, buf, 512);
 
     // Discard the CRC bytes
     spi_dobyte(sd, 0xFF);

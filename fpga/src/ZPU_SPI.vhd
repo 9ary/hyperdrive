@@ -57,11 +57,10 @@ architecture Behavioral of ZPU_SPI is
   signal spi_data        : std_logic_vector(7 downto 0)     := (others => '0');
   signal spi_state       : natural range 0 to 9             := 0;
   signal spi_active      : boolean                          := false;
+  signal spi_fastread    : boolean                          := false;
 begin
   SSelect <= spi_ssel;
   SClock  <= spi_clock;
-
-  ZPUBusOut.mem_busy <= '0';
 
   process(Clock)
   begin
@@ -74,8 +73,20 @@ begin
         spi_clock        <= '1';
         spi_clockcounter <= 0;
         spi_data         <= (others => '0');
+        ZPUBusOut.mem_busy <= '0';
+        spi_fastread <= false;
       else
         -- ZPU interface
+        ZPUBusOut.mem_busy <= '0';
+        if spi_fastread = true then
+          ZPUBusOut.mem_busy <= '1';
+          ZPUBusOut.mem_read(7 downto 0) <= spi_data;
+          if spi_active = false then
+            ZPUBusOut.mem_busy <= '0';
+            spi_fastread <= false;
+          end if;
+        end if;
+
         if ZSelect = '1' then
           if ZPUBusIn.mem_writeEnable = '1' then
             -- write access
@@ -92,7 +103,10 @@ begin
             -- read access
             ZPUBusOut.mem_read <= (others => '0');
 
-            if ZPUBusIn.mem_addr(2) = '0' then
+            if ZPUBusIn.mem_addr(3) = '1' then
+              ZPUBusOut.mem_busy <= '1';
+              spi_fastread <= true;
+            elsif ZPUBusIn.mem_addr(2) = '0' then
               ZPUBusOut.mem_read(7 downto 0) <= spi_data;
             else
               ZPUBusOut.mem_read(0) <= spi_ssel;

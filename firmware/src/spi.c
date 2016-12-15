@@ -14,8 +14,7 @@ void spi_cs(struct spi *spi, int state)
 uint8_t spi_dobyte(struct spi *spi, uint8_t byte)
 {
     spi->data = byte;
-    while (spi->flags & SPI_FLAG_BUSY);
-    return spi->data;
+    return spi->fastdata;
 }
 
 void spi_writebuf(struct spi *spi, const void *buf, unsigned int size)
@@ -30,4 +29,14 @@ void spi_readbuf(struct spi *spi, void *buf, unsigned int size)
     uint8_t *buf_ = buf;
     for (unsigned int i = 0; i < size; i++)
         buf_[i] = spi_dobyte(spi, 0xFF);
+}
+
+void spi_readbuf32(struct spi *spi, void *buf, unsigned int size)
+{
+    uint32_t *buf_ = buf;
+    for (unsigned int i = 0; i < size; i++)
+    {
+        spi->data = 0xFF;
+        buf_[i] = spi->fastdata;
+    }
 }

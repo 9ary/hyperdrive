@@ -4,6 +4,6 @@
 #include <stdint.h>
 
 void sd_init(void);
-void sd_read(uint32_t lba, uint8_t *buf);
+void sd_read(uint32_t lba, uint32_t *buf);
 
 #endif

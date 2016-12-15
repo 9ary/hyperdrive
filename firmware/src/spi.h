@@ -7,11 +7,13 @@ struct spi
 {
     volatile uint32_t data;
     volatile uint32_t flags;
+    volatile uint32_t fastdata;
 };
 
 void spi_cs(struct spi *spi, int state);
 uint8_t spi_dobyte(struct spi *spi, uint8_t byte);
 void spi_writebuf(struct spi *spi, const void *buf, unsigned int size);
 void spi_readbuf(struct spi *spi, void *buf, unsigned int size);
+void spi_readbuf32(struct spi *spi, void *buf, unsigned int size);
 
 #endif
