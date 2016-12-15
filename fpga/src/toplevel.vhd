@@ -60,7 +60,7 @@ architecture Behavioral of hyperdrive is
 
     signal reset : std_logic;
 
-    constant dev_count : natural := 3;
+    constant dev_count : natural := 4;
     signal bus_selects : ZPUMuxSelects(0 to dev_count-1);
     signal bus_outs : ZPUMuxDevOuts(0 to dev_count-1);
     signal bus_in : ZPUDeviceIn;
@@ -73,6 +73,9 @@ architecture Behavioral of hyperdrive is
 
     signal spi_sel : std_logic;
     signal spi_outs : ZPUDeviceOut;
+
+    signal di_sel : std_logic;
+    signal di_outs : ZPUDeviceOut;
 
 begin
 
@@ -146,7 +149,7 @@ begin
         ZPUBusIn => bus_in,
         ZPUBusOut => gpio_outs,
 
-        led => led
+        led => open
     );
 
     spi: entity work.ZPU_SPI
@@ -167,6 +170,25 @@ begin
         SSelect => sd_cs
     );
 
+    di: entity work.di
+    port map
+    (
+        Clock => clk,
+        ZSelect => di_sel,
+        ZPUBusIn => bus_in,
+        ZPUBusOut => di_outs,
+
+        DIHSTRB => DIHSTRB,
+        DIDIR => DIDIR,
+        DIBRK => DIBRK,
+        DIRSTB => DIRSTB,
+        DIDSTRB => DIDSTRB,
+        DIERRB => DIERRB,
+        DICOVER => DICOVER,
+        DID => DID,
+        led => led
+    );
+
     bus_in.Reset <= reset;
     bus_in.mem_write <= mem_write;
     bus_in.mem_addr <= mem_addr;
@@ -176,13 +198,15 @@ begin
     bus_selects <= (
         0 => uart_sel,
         1 => gpio_sel,
-        2 => spi_sel
+        2 => spi_sel,
+        3 => di_sel
     );
 
     bus_outs <= (
         0 => uart_outs,
         1 => gpio_outs,
-        2 => spi_outs
+        2 => spi_outs,
+        3 => di_outs
     );
 
     busmux: entity work.ZPUBusMux
@@ -206,6 +230,7 @@ begin
         uart_sel <= '0';
         gpio_sel <= '0';
         spi_sel <= '0';
+        di_sel <= '0';
     if mem_writeEnable = '1' or mem_readEnable = '1' then
         case mem_addr(31 downto 28) is
             when x"F" => -- peripheral space
@@ -216,6 +241,8 @@ begin
                         gpio_sel <= '1';
                     when x"D" =>
                         spi_sel <= '1';
+                    when x"C" =>
+                        di_sel <= '1';
                     when others => null;
                 end case;
             when others => null;

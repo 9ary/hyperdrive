@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "sd.h"
 #include "spi.h"
 #include "uart.h"
@@ -43,16 +44,16 @@ void sd_init(void)
         spi_readbuf(sd, &r7, 4);
 
         if ((r7 & 0xFFF) == 0x1AA)
-            puts("SDCv2+ compatible with voltage range\r\n");
+            puts("SDCv2+ compatible with voltage range");
         else
-            puts("SDCv2+ incompatible with voltage range\r\n");
+            puts("SDCv2+ incompatible with voltage range");
     }
     else
     {
-        puts("SDCv1/MMC\r\n");
+        puts("SDCv1/MMC");
     }
 
-    puts("Starting card init\r\n");
+    puts("Starting card init");
     r = 1;
     while (r != 0)
     {
@@ -69,12 +70,12 @@ void sd_init(void)
 
         if (r3 & (1 << 30))
         {
-            puts("Card is SDHC\r\n");
+            puts("Card is SDHC");
             is_sdhc = 1;
         }
     }
 
-    puts("SD init done\r\n");
+    puts("SD init done");
 }
 
 void sd_read(uint32_t lba, uint32_t *buf)
@@ -91,4 +92,40 @@ void sd_read(uint32_t lba, uint32_t *buf)
     // Discard the CRC bytes
     spi_dobyte(sd, 0xFF);
     spi_dobyte(sd, 0xFF);
+}
+
+void sd_stream(uint32_t offset, unsigned int size, volatile uint32_t *target)
+{
+    while (size)
+    {
+        uint32_t lba = offset >> 9;
+        if (is_sdhc == 0)
+            lba = lba << 9;
+        
+        do_cmd(17, lba, 1);
+        uint32_t byte;
+        while ((byte = spi_dobyte(sd, 0xFF)) != 0xFE);
+
+
+        uint32_t discard = offset & (512 - 1);
+        unsigned int n = (size + discard > 512) ? 512 - discard : size;
+        printf("%u %u ", discard, n);
+
+        for (unsigned int i = 0; i < discard; i++)
+            spi_dobyte(sd, 0xFF);
+
+        spi_stream32(sd, target, n);
+
+        discard = 512 - n - discard;
+        printf("%u\r\n", discard);
+        for (unsigned int i = 0; i < discard; i++)
+            spi_dobyte(sd, 0xFF);
+
+        // Discard the CRC bytes
+        spi_dobyte(sd, 0xFF);
+        spi_dobyte(sd, 0xFF);
+
+        size -= n;
+        offset += n;
+    }
 }

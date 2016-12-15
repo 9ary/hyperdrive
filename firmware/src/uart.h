@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 
-char getc(void);
-void putc(char c);
-void puts(const char *str);
+char uart_getc(void);
+void uart_putc(char c);
 
 #endif

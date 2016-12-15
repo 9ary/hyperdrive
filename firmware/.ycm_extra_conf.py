@@ -37,7 +37,7 @@ import shlex
 # compilation database set (by default, one is not set).
 # CHANGE THIS LIST OF FLAGS. YES, THIS IS THE DROID YOU HAVE BEEN LOOKING FOR.
 #cflags = subprocess.check_output(shlex.split("./configure.py --cflags")).split()
-flags = "-x c -m32 -nostdinc -Wall -Wextra -pedantic -std=c99 -Iinclude".split()
+flags = "-x c -m32 -nostdinc -Wall -Wextra -pedantic -std=c99 -Iinclude -isystem /home/streetwalrus/source/zpugcc/toolchain/install/zpu-elf/include -isystem /home/streetwalrus/source/zpugcc/toolchain/install/lib/gcc/zpu-elf/3.4.2/include".split()
 
 
 # Set this to the absolute path to the folder (NOT the file!) containing the

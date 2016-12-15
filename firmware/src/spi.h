@@ -15,5 +15,6 @@ uint32_t spi_dobyte(struct spi *spi, uint32_t byte) __attribute__((always_inline
 void spi_writebuf(struct spi *spi, const void *buf, unsigned int size);
 void spi_readbuf(struct spi *spi, void *buf, unsigned int size);
 void spi_readbuf32(struct spi *spi, void *buf, unsigned int size);
+void spi_stream32(struct spi *spi, volatile uint32_t *target, unsigned int size);
 
 #endif

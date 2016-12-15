@@ -37,3 +37,9 @@ void spi_readbuf32(struct spi *spi, void *buf, unsigned int size)
     for (unsigned int i = 0; i < size; i++)
         buf_[i] = spi_dobyte(spi, 0xFF);
 }
+
+void spi_stream32(struct spi *spi, volatile uint32_t *target, unsigned int size)
+{
+    for (unsigned int i = 0; i < size; i++)
+        *target = spi_dobyte(spi, 0xFF);
+}

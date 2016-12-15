@@ -11,20 +11,14 @@ struct uart
 
 static struct uart *uart = (struct uart *) 0xFFFFFF00;
 
-char getc(void)
+char uart_getc(void)
 {
     while (uart->status & RX_EMPTY);
     return uart->c;
 }
 
-void putc(char c)
+void uart_putc(char c)
 {
     while (uart->status & TX_FULL);
     uart->c = c;
-}
-
-void puts(const char *str)
-{
-    while (*str)
-        putc(*str++);
 }
