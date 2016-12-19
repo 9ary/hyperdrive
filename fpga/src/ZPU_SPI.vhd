@@ -46,7 +46,11 @@ entity ZPU_SPI is
     MOSI     : out std_logic;
     MISO     : in  std_logic;
     SClock   : out std_logic;
-    SSelect  : out std_logic
+    SSelect  : out std_logic;
+
+    dout : out std_logic_vector(7 downto 0);
+    dout_stb : out std_logic;
+    dout_full : in std_logic
   );
 end ZPU_SPI;
 
@@ -58,6 +62,7 @@ architecture Behavioral of ZPU_SPI is
   signal spi_state       : natural range 0 to 9             := 0;
   signal spi_active      : boolean                          := false;
   signal spi_fastread    : boolean                          := false;
+  signal dout_count      : unsigned(31 downto 0)            := (others => '0');
 begin
   SSelect <= spi_ssel;
   SClock  <= spi_clock;
@@ -75,6 +80,8 @@ begin
         spi_data         <= (others => '0');
         ZPUBusOut.mem_busy <= '0';
         spi_fastread <= false;
+        dout_count <= (others => '0');
+        dout_stb <= '0';
       else
         -- ZPU interface
         ZPUBusOut.mem_busy <= '0';
@@ -86,11 +93,17 @@ begin
             spi_fastread <= false;
           end if;
         end if;
+        if dout_count /= 0 then
+          ZPUBusOut.mem_busy <= '1';
+        end if;
 
         if ZSelect = '1' then
           if ZPUBusIn.mem_writeEnable = '1' then
             -- write access
-            if ZPUBusIn.mem_addr(2) = '0' then
+            if ZPUBusIn.mem_addr(3) = '1' then
+              dout_count <= unsigned(ZPUBusIn.mem_write);
+              ZPUBusOut.mem_busy <= '1';
+            elsif ZPUBusIn.mem_addr(2) = '0' then
               spi_data         <= ZPUBusIn.mem_write(7 downto 0);
               spi_state        <= 0;
               spi_active       <= true;
@@ -117,6 +130,15 @@ begin
           end if;
         end if;
 
+        dout_stb <= '0';
+        if dout_count /= 0 and spi_active = false and dout_full = '0' then
+          spi_active <= true;
+          spi_data <= x"FF";
+          spi_state <= 0;
+          MOSI <= '1';
+          spi_clockcounter <= SPIClockDiv - 1;
+        end if;
+
         -- SPI state machine
         if spi_active = true then
           if spi_clockcounter /= 0 then
@@ -128,6 +150,11 @@ begin
               if spi_state = 9 then
                 -- SPI is no longer busy
                 spi_active <= false;
+                if dout_count /= 0 then
+                  dout <= spi_data;
+                  dout_stb <= '1';
+                  dout_count <= dout_count - 1;
+                end if;
               else
                 -- at the rising edge, sample input
                 spi_clock <= '1';

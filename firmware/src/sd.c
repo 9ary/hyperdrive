@@ -101,7 +101,7 @@ void sd_stream(uint32_t offset, unsigned int size, volatile uint32_t *target)
         uint32_t lba = offset >> 9;
         if (is_sdhc == 0)
             lba = lba << 9;
-        
+
         do_cmd(17, lba, 1);
         uint32_t byte;
         while ((byte = spi_dobyte(sd, 0xFF)) != 0xFE);
@@ -109,15 +109,13 @@ void sd_stream(uint32_t offset, unsigned int size, volatile uint32_t *target)
 
         uint32_t discard = offset & (512 - 1);
         unsigned int n = (size + discard > 512) ? 512 - discard : size;
-        printf("%u %u ", discard, n);
 
         for (unsigned int i = 0; i < discard; i++)
             spi_dobyte(sd, 0xFF);
 
-        spi_stream32(sd, target, n);
+        sd->fastdata = n;
 
         discard = 512 - n - discard;
-        printf("%u\r\n", discard);
         for (unsigned int i = 0; i < discard; i++)
             spi_dobyte(sd, 0xFF);
 

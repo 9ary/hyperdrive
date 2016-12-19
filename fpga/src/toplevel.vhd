@@ -77,6 +77,10 @@ architecture Behavioral of hyperdrive is
     signal di_sel : std_logic;
     signal di_outs : ZPUDeviceOut;
 
+    signal dma_d : std_logic_vector(7 downto 0);
+    signal dma_stb : std_logic;
+    signal dma_full : std_logic;
+
 begin
 
     reset <= '0';
@@ -167,7 +171,11 @@ begin
         MOSI => sd_mosi,
         MISO => sd_miso,
         SClock => sd_clk,
-        SSelect => sd_cs
+        SSelect => sd_cs,
+
+        dout => dma_d,
+        dout_stb => dma_stb,
+        dout_full => dma_full
     );
 
     di: entity work.di
@@ -186,7 +194,11 @@ begin
         DIERRB => DIERRB,
         DICOVER => DICOVER,
         DID => DID,
-        led => led
+        led => led,
+
+        extin => dma_d,
+        extin_stb => dma_stb,
+        extin_full => dma_full
     );
 
     bus_in.Reset <= reset;
