@@ -70,8 +70,8 @@ begin
     di_reset <= not DIRSTB_sync(1);
 
     DID <= (others => 'Z') when DIDIR = '0' else out_read_data;
-    DICOVER <= status_reg(0);
-    DIERRB <= status_reg(1);
+    DICOVER <= 'Z' when DIRSTB = '0' else status_reg(0);
+    DIERRB <= 'Z' when DIRSTB = '0' else status_reg(1);
 
     out_fifo : std_fifo
     port map
@@ -183,7 +183,7 @@ begin
 
                 cmd_counter := 0;
                 cmd_ready := false;
-                DIDSTRB <= '1';
+                DIDSTRB <= 'Z';
                 status_reg <= (others => '1');
 
             else
