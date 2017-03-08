@@ -83,13 +83,6 @@ architecture Behavioral of hyperdrive is
 
 begin
 
-    reset <= '0';
-
-    DIDSTRB <= 'Z';
-    DIERRB <= 'Z';
-    DICOVER <= 'Z';
-    DID <= (others => 'Z');
-
     rom : entity work.zpurom
     generic map
     (
@@ -185,6 +178,8 @@ begin
         ZSelect => di_sel,
         ZPUBusIn => bus_in,
         ZPUBusOut => di_outs,
+
+        g_reset => reset,
 
         DIHSTRB => DIHSTRB,
         DIDIR => DIDIR,

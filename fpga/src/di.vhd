@@ -16,6 +16,7 @@ entity di is
         ZPUBusIn : in ZPUDeviceIn;
         ZPUBusOut : out ZPUDeviceOut;
 
+        g_reset : out std_logic;
         led : out std_logic_vector(7 downto 0);
 
         extin : in std_logic_vector(7 downto 0);
@@ -54,8 +55,6 @@ architecture Behavioral of di is
     type DID_sync_t is array(1 downto 0) of std_logic_vector(7 downto 0);
     signal DID_sync : DID_sync_t;
 
-    signal status_reg : std_logic_vector(1 downto 0);
-
     signal out_write : std_logic;
     signal out_write_data : std_logic_vector(7 downto 0);
     signal out_read : std_logic;
@@ -67,11 +66,10 @@ begin
 
     extin_full <= out_full;
 
+    g_reset <= di_reset;
     di_reset <= not DIRSTB_sync(1);
 
     DID <= (others => 'Z') when DIDIR = '0' else out_read_data;
-    DICOVER <= 'Z' when DIRSTB = '0' else status_reg(0);
-    DIERRB <= 'Z' when DIRSTB = '0' else status_reg(1);
 
     out_fifo : std_fifo
     port map
@@ -90,6 +88,8 @@ begin
 
     -- ZPU FIFO state machine
     process (Clock)
+        variable status_reg : std_logic_vector(2 downto 0);
+
         type cmd_buf_t is array(11 downto 0) of std_logic_vector(7 downto 0);
         variable cmd_buf : cmd_buf_t;
         variable cmd_counter : natural range 0 to 12;
@@ -119,7 +119,7 @@ begin
             end if;
 
             if ZPUBusIn.Reset = '1' then
-                null;
+                status_reg := (others => '1');
             else
 
                 if ZSelect = '1' then
@@ -130,10 +130,7 @@ begin
                                 out_write_data <= ZPUBusIn.mem_write(7 downto 0);
 
                             when x"1" =>
-                                status_reg <= ZPUBusIn.mem_write(1 downto 0);
-                                if ZPUBusIn.mem_write(2) = '1' then
-                                    cmd_ready := false;
-                                end if;
+                                status_reg := ZPUBusIn.mem_write(status_reg'high downto 0);
 
                             when others =>
                                 null;
@@ -142,21 +139,25 @@ begin
                     elsif ZPUBusIn.mem_readEnable = '1' then
                         case ZPUBusIn.mem_addr(5 downto 2) is
                             when x"1" =>
-                                ZPUBusOut.mem_read(1 downto 0) <= status_reg;
-                                ZPUBusOut.mem_read(2) <= '1';
+                                ZPUBusOut.mem_read(status_reg'high downto 0) <= status_reg;
 
                                 if cmd_ready = true then
                                     ZPUBusOut.mem_read(2) <= '0';
+                                else
+                                    ZPUBusOut.mem_read(2) <= '1';
                                 end if;
 
                             when x"2" =>
                                 ZPUBusOut.mem_read <= cmd_buf(0) & cmd_buf(1) & cmd_buf(2) & cmd_buf(3);
+                                cmd_ready := false;
 
                             when x"3" =>
                                 ZPUBusOut.mem_read <= cmd_buf(4) & cmd_buf(5) & cmd_buf(6) & cmd_buf(7);
+                                cmd_ready := false;
 
                             when x"4" =>
                                 ZPUBusOut.mem_read <= cmd_buf(8) & cmd_buf(9) & cmd_buf(10) & cmd_buf(11);
+                                cmd_ready := false;
 
                             when others =>
                                 null;
@@ -164,6 +165,9 @@ begin
                     end if;
                 end if;
             end if;
+
+            DICOVER <= status_reg(0);
+            DIERRB <= status_reg(1);
 
             if extin_stb = '1' then
                 out_write <= '1';
@@ -184,23 +188,14 @@ begin
                 cmd_counter := 0;
                 cmd_ready := false;
                 DIDSTRB <= 'Z';
-                status_reg <= (others => '1');
+                DIERRB <= 'Z';
+                DICOVER <= 'Z';
 
             else
                 if DIDIR_sync(1) = '0' then
                     led(1) <= '1';
-                    if cmd_counter >= 9 then
-                        DIDSTRB <= '1';
-                    else
-                        DIDSTRB <= '0';
-                    end if;
-
                     if DIHSTRB_sync(2 downto 1) = "01" then -- Rising edge
                         cmd_buf(cmd_counter) := DID_sync(1);
-
-                        if cmd_counter = 8 then
-                            DIDSTRB <= '1';
-                        end if;
 
                         if cmd_counter = 11 then
                             cmd_ready := true;
@@ -208,6 +203,13 @@ begin
 
                         cmd_counter := cmd_counter + 1;
                     end if;
+
+                    if cmd_counter >= 9 then
+                        status_reg(2) := '1';
+                    end if;
+
+                    DIDSTRB <= status_reg(2);
+
                 else
                     led(2) <= '1';
                     if cmd_counter = 12 and DIHSTRB_sync(1) = '1' then

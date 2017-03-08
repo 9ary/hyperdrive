@@ -23,15 +23,19 @@ int main()
 
     sd_init();
 
-    di->status = (0 << 2) | (1 << 1) | (0 << 0);
+    // Not ready yet, no error, cover closed
+    di->status = (1 << 2) | (1 << 1) | (0 << 0);
+
+    for (volatile int i = 0; i < 1000000; i++);
 
     while (1)
     {
-        //printf("Waiting\r\n");
+        // We're ready now
+        di->status &= ~(1 << 2);
         while (di->status & (1 << 2));
-        //di->status |= 1 << 2;
-        di->status = (1 << 2) | (1 << 1) | (0 << 0);
-        for (volatile int i = 0; i < 1000; i++);
+
+        for (volatile int i = 0; i < 20000; i++);
+        printf("%08x %08x %08x\r\n", di->cmdbuf[0], di->cmdbuf[1], di->cmdbuf[2]);
 
 
         switch (di->cmdbuf[0] >> 24)
@@ -52,10 +56,10 @@ int main()
 
         default:
             printf("Unhandled command\r\n");
-        printf("%08x %08x %08x\r\n", di->cmdbuf[0], di->cmdbuf[1], di->cmdbuf[2]);
             for (unsigned int i = 0; i < 4; i++)
                 di->out = 0;
         }
+        for (volatile int i = 0; i < 10000; i++);
     }
 
     return 0;
