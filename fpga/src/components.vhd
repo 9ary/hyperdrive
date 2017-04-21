@@ -45,7 +45,9 @@ package components is
         none,
         set_ready,
         lid_open,
-        lid_close
+        lid_close,
+        bus_write,
+        ack_cmd
     );
 
     component di
@@ -54,7 +56,8 @@ package components is
 
             cmd : out di_cmd_t; -- Command buffer
             resetting : out std_logic;
-            listening : out std_logic;
+            cmd_ready : out std_logic;
+            wr_data : in std_logic_vector(7 downto 0);
             ctrl : in di_ctrl_t;
 
             -- Control signals

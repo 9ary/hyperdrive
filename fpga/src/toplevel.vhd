@@ -40,7 +40,8 @@ end hyperdrive;
 architecture Behavioral of hyperdrive is
     signal di_cmd : di_cmd_t;
     signal di_resetting : std_logic;
-    signal di_listening : std_logic;
+    signal di_cmd_ready : std_logic;
+    signal di_wr_data : std_logic_vector(7 downto 0);
     signal di_ctrl : di_ctrl_t;
 
     signal host_data_in : std_logic_vector(7 downto 0);
@@ -55,7 +56,8 @@ begin
         clk => clk,
         cmd => di_cmd,
         resetting => di_resetting,
-        listening => di_listening,
+        cmd_ready => di_cmd_ready,
+        wr_data => di_wr_data,
         ctrl => di_ctrl,
         DIHSTRB => DIHSTRB,
         DIDIR => DIDIR,
@@ -85,7 +87,8 @@ begin
     process (clk)
         type state_t is (
             cmd,
-            read_di_cmd
+            read_di_cmd,
+            write_di_data
         );
         variable state : state_t;
 
@@ -106,7 +109,7 @@ begin
                                 when x"01" =>
                                     host_data_out <= (
                                         0 => di_resetting,
-                                        1 => di_listening,
+                                        1 => di_cmd_ready,
                                         others => '0');
                                     host_push <= '1';
 
@@ -125,6 +128,12 @@ begin
                                     read_di_cmd_count := 1;
                                     state := read_di_cmd;
 
+                                when x"06" =>
+                                    state := write_di_data;
+
+                                when x"07" =>
+                                    di_ctrl <= ack_cmd;
+
                                 when x"FF" => -- Special case for reads
                                     null;
 
@@ -142,6 +151,12 @@ begin
                             if read_di_cmd_count = 12 then
                                 state := cmd;
                             end if;
+                        end if;
+
+                    when write_di_data =>
+                        if host_strobe = '1' then
+                            di_wr_data <= host_data_in;
+                            di_ctrl <= bus_write;
                         end if;
                 end case;
             end if;

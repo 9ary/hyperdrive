@@ -10,8 +10,9 @@ entity di is
         clk : in std_logic;
 
         cmd : out di_cmd_t; -- Command buffer
+        cmd_ready : out std_logic;
         resetting : out std_logic;
-        listening : out std_logic;
+        wr_data : in std_logic_vector(7 downto 0);
         ctrl : in di_ctrl_t;
 
         -- Control signals
@@ -30,7 +31,27 @@ entity di is
 end di;
 
 architecture drive of di is
+    signal wr_buf_rst : std_logic;
+    signal wr_buf_wr_en : std_logic;
+    signal wr_buf_din : std_logic_vector(7 downto 0);
+    signal wr_buf_rd_en : std_logic;
+    signal wr_buf_dout : std_logic_vector(7 downto 0);
+    signal wr_buf_empty : std_logic;
 begin
+    wr_buf : std_fifo generic map (
+        data_width => 8,
+        fifo_depth => 256
+    ) port map (
+        clk => clk,
+        rst => wr_buf_rst,
+        wr_en => wr_buf_wr_en,
+        din => wr_buf_din,
+        full => open,
+        rd_en => wr_buf_rd_en,
+        dout => wr_buf_dout,
+        empty => wr_buf_empty
+    );
+
     process (clk)
         variable DIHSTRB_prev : std_logic;
         variable DIHSTRB_sync : std_logic;
@@ -45,6 +66,7 @@ begin
         variable cmd_bytes : natural range 0 to 12;
 
         variable host_ready : std_logic;
+        variable strobe_count : natural range 0 to 8;
     begin
         if rising_edge(clk) then
             if DIRSTB_sync = '0' then
@@ -61,19 +83,30 @@ begin
                 cmd_bytes := 0;
 
                 host_ready := '0';
+                strobe_count := 0;
+                cmd_ready <= '0';
             else
                 -- TODO handle DIBRK
+
+                wr_buf_wr_en <= '0';
+                wr_buf_rd_en <= '0';
 
                 case ctrl is
                     when none => null;
                     when set_ready => busy := '0';
                     when lid_close => cover_state := '0';
                     when lid_open => cover_state := '1';
+                    when bus_write =>
+                        wr_buf_din <= wr_data;
+                        wr_buf_wr_en <= '1';
+                    when ack_cmd => cmd_ready <= '0';
                 end case;
 
                 if DIDIR_sync = '0' then
                     -- Receiving
                     host_ready := '0';
+                    strobe_count := 0;
+                    cmd_ready <= '0';
 
                     if DIHSTRB_prev = '0' and DIHSTRB_sync = '1' and cmd_bytes /= 12 then
                         cmd(cmd_bytes) <= DID_sync;
@@ -88,6 +121,9 @@ begin
                     DIDSTRB <= busy;
                 else
                     -- Sending
+                    if cmd_bytes = 12 then
+                        cmd_ready <= '1';
+                    end if;
                     busy := '0';
                     cmd_bytes := 0;
 
@@ -95,15 +131,28 @@ begin
                         host_ready := '1';
                     end if;
 
-                    -- TODO handle replying properly
-                    DIDSTRB <= '1';
-                end if;
+                    if host_ready = '1' and strobe_count = 0 and wr_buf_empty = '0' then
+                        strobe_count := 8;
+                        wr_buf_rd_en <= '1';
+                    end if;
 
-                listening <= host_ready;
+                    if strobe_count /= 0 then
+                        strobe_count := strobe_count - 1;
+                    end if;
+
+                    DIDSTRB <= '1';
+                    if strobe_count > 3 then
+                        DIDSTRB <= '0';
+                    end if;
+
+                    DID <= wr_buf_dout;
+                end if;
 
                 DIERRB <= '1'; -- TODO
                 DICOVER <= cover_state;
             end if;
+
+            wr_buf_rst <= not host_ready;
 
             resetting <= not DIRSTB_sync;
 
