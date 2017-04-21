@@ -39,7 +39,7 @@ end hyperdrive;
 
 architecture Behavioral of hyperdrive is
     signal di_cmd : di_cmd_t;
-    signal di_reseting : std_logic;
+    signal di_resetting : std_logic;
     signal di_listening : std_logic;
     signal di_ctrl : di_ctrl_t;
 
@@ -54,7 +54,7 @@ begin
     gc : di port map (
         clk => clk,
         cmd => di_cmd,
-        reseting => di_reseting,
+        resetting => di_resetting,
         listening => di_listening,
         ctrl => di_ctrl,
         DIHSTRB => DIHSTRB,
@@ -105,7 +105,7 @@ begin
                             case host_data_in is
                                 when x"01" =>
                                     host_data_out <= (
-                                        0 => di_reseting,
+                                        0 => di_resetting,
                                         1 => di_listening,
                                         others => '0');
                                     host_push <= '1';

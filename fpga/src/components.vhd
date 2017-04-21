@@ -53,7 +53,7 @@ package components is
             clk : in std_logic;
 
             cmd : out di_cmd_t; -- Command buffer
-            reseting : out std_logic;
+            resetting : out std_logic;
             listening : out std_logic;
             ctrl : in di_ctrl_t;
 

@@ -10,7 +10,7 @@ entity di is
         clk : in std_logic;
 
         cmd : out di_cmd_t; -- Command buffer
-        reseting : out std_logic;
+        resetting : out std_logic;
         listening : out std_logic;
         ctrl : in di_ctrl_t;
 
@@ -105,7 +105,7 @@ begin
                 DICOVER <= cover_state;
             end if;
 
-            reseting <= not DIRSTB_sync;
+            resetting <= not DIRSTB_sync;
 
             DIHSTRB_prev := DIHSTRB_sync;
             DIHSTRB_sync := DIHSTRB;
