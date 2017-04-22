@@ -66,7 +66,7 @@ begin
         variable cmd_bytes : natural range 0 to 12;
 
         variable host_ready : std_logic;
-        variable strobe_count : natural range 0 to 8;
+        variable strobe_count : natural range 0 to 7;
     begin
         if rising_edge(clk) then
             if DIRSTB_sync = '0' then
@@ -132,11 +132,9 @@ begin
                     end if;
 
                     if host_ready = '1' and strobe_count = 0 and wr_buf_empty = '0' then
-                        strobe_count := 8;
+                        strobe_count := 7;
                         wr_buf_rd_en <= '1';
-                    end if;
-
-                    if strobe_count /= 0 then
+                    elsif strobe_count /= 0 then
                         strobe_count := strobe_count - 1;
                     end if;
 
