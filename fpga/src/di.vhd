@@ -40,7 +40,7 @@ architecture drive of di is
 begin
     wr_buf : std_fifo generic map (
         data_width => 8,
-        fifo_depth => 256
+        fifo_depth => 64 * 1024
     ) port map (
         clk => clk,
         rst => wr_buf_rst,
