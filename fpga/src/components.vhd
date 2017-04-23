@@ -43,7 +43,6 @@ package components is
     type di_cmd_t is array(11 downto 0) of std_logic_vector(7 downto 0);
     type di_ctrl_t is (
         none,
-        set_ready,
         lid_open,
         lid_close,
         bus_write,

@@ -62,7 +62,7 @@ begin
 
         variable cover_state : std_logic;
 
-        variable busy : std_logic;
+        variable ack : std_logic;
         variable cmd_bytes : natural range 0 to 12;
 
         variable host_ready : std_logic;
@@ -77,9 +77,7 @@ begin
 
                 cover_state := '1'; -- Open by default
 
-                -- TODO investigate why we can't be "busy" on reset in the IPL
-                -- Probably a timing issue
-                busy := '0';
+                ack := '0';
                 cmd_bytes := 0;
 
                 host_ready := '0';
@@ -93,7 +91,6 @@ begin
 
                 case ctrl is
                     when none => null;
-                    when set_ready => busy := '0';
                     when lid_close => cover_state := '0';
                     when lid_open => cover_state := '1';
                     when bus_write =>
@@ -113,18 +110,18 @@ begin
                         cmd_bytes := cmd_bytes + 1;
 
                         if cmd_bytes = 9 then
-                            busy := '1';
+                            ack := '1';
                         end if;
                     end if;
 
                     DID <= (others => 'Z');
-                    DIDSTRB <= busy;
+                    DIDSTRB <= ack;
                 else
                     -- Sending
                     if cmd_bytes = 12 then
                         cmd_ready <= '1';
                     end if;
-                    busy := '0';
+                    ack := '0';
                     cmd_bytes := 0;
 
                     if DIHSTRB_sync = '0' then

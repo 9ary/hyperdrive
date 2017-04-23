@@ -113,9 +113,6 @@ begin
                                         others => '0');
                                     host_push <= '1';
 
-                                when x"02" =>
-                                    di_ctrl <= set_ready;
-
                                 when x"03" =>
                                     di_ctrl <= lid_close;
 
