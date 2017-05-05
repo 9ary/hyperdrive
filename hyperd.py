@@ -56,6 +56,14 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
             gcm.seek(cmd[1] << 2)
             data = gcm.read(cmd[2])
             data += bytes(cmd[2] - len(data))
+
+            # Patch game region to PAL
+            o = 0x45B - (cmd[1] << 2)
+            if o >= 0 and o < cmd[2]:
+                data = bytearray(data)
+                data[o] = 0x02
+                data = bytes(data)
+
             write_data(data)
 
         elif cmd[0] >> 24 == 0x12:
