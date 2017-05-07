@@ -120,6 +120,7 @@ begin
                                     di_ctrl <= lid_open;
 
                                 when x"05" =>
+                                    di_ctrl <= ack_cmd;
                                     host_data_out <= di_cmd(0);
                                     host_push <= '1';
                                     read_di_cmd_count := 1;
@@ -127,9 +128,6 @@ begin
 
                                 when x"06" =>
                                     state := write_di_data;
-
-                                when x"07" =>
-                                    di_ctrl <= ack_cmd;
 
                                 when x"FF" => -- Special case for reads
                                     null;

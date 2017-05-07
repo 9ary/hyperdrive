@@ -31,9 +31,6 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
         spi.Stop()
         spi.Start()
 
-    def ack_cmd():
-        spi.Write(b"\x07")
-
     spi.Start()
 
     lid_open()
@@ -49,7 +46,6 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
             continue
 
         cmd = read_cmd()
-        ack_cmd()
 
         if cmd[0] >> 24 == 0xA8:
             print(f"Reading 0x{cmd[2]:X} bytes at 0x{cmd[1] << 2:X}")
