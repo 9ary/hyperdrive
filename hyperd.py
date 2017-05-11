@@ -75,7 +75,15 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
             write_data(bytes(4))
 
         elif cmd[0] >> 24 == 0xE4:
-            print("audio streaming")
+            print("audio streaming setup")
+            write_data(bytes(4))
+
+        elif cmd[0] >> 24 == 0xE1:
+            print("play audio stream")
+            write_data(bytes(4))
+
+        elif cmd[0] >> 24 == 0xE2:
+            print("audio streaming status")
             write_data(bytes(4))
 
         elif cmd[0] >> 24 == 0xDF:
