@@ -6,11 +6,14 @@ library work;
 use work.components.all;
 
 entity spi_slave is
+    generic (
+        constant data_width : positive := 8
+    );
     port (
         clk : in std_logic;
 
-        data_in : out std_logic_vector(7 downto 0);
-        data_out : in std_logic_vector(7 downto 0);
+        data_in : out std_logic_vector(data_width - 1 downto 0);
+        data_out : in std_logic_vector(data_width - 1 downto 0);
         enable : out std_logic;
         strobe : out std_logic;
         push : in std_logic;
@@ -30,21 +33,21 @@ begin
         variable mosi_sync : std_logic;
         variable scs_sync : std_logic;
 
-        variable sr : std_logic_vector(7 downto 0);
-        variable bitcount : natural range 0 to 7;
+        variable sr : std_logic_vector(data_width - 1 downto 0);
+        variable bitcount : natural range 0 to data_width - 1;
     begin
         if rising_edge(clk) then
             enable <= not scs_sync;
             strobe <= '0';
 
             if scs_sync = '1' then
-                sr := x"FF";
+                sr := (others => '1');
                 bitcount := 0;
 
                 miso <= 'Z';
             else
                 if sclk_prev = '0' and sclk_sync = '1' then
-                    sr := sr(6 downto 0) & mosi_sync;
+                    sr := sr(data_width - 2 downto 0) & mosi_sync;
                     bitcount := bitcount + 1;
 
                     if bitcount = 0 then
@@ -58,7 +61,7 @@ begin
                     sr := data_out;
                 end if;
 
-                miso <= sr(7);
+                miso <= sr(data_width - 1);
             end if;
 
             sclk_prev := sclk_sync;
