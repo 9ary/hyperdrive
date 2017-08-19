@@ -31,6 +31,11 @@ entity di is
 end di;
 
 architecture drive of di is
+    -- At 100MHz, /8 (12.5MHz) is the closest to the real drive's 38/3MHz
+    -- /6 (16.667MHz) appears to work fine, and is what the Wii uses according to Dolphin
+    -- /4 doesn't get even get close to booting
+    constant DIDSTRB_div : natural := 8;
+
     signal wr_buf_rst : std_logic;
     signal wr_buf_wr_en : std_logic;
     signal wr_buf_din : std_logic_vector(7 downto 0);
@@ -66,7 +71,7 @@ begin
         variable cmd_bytes : natural range 0 to 12;
 
         variable host_ready : std_logic;
-        variable strobe_count : natural range 0 to 7;
+        variable strobe_count : natural range 0 to DIDSTRB_div - 1;
     begin
         if rising_edge(clk) then
             if DIRSTB_sync = '0' then
@@ -129,14 +134,14 @@ begin
                     end if;
 
                     if host_ready = '1' and strobe_count = 0 and wr_buf_empty = '0' then
-                        strobe_count := 7;
+                        strobe_count := DIDSTRB_div - 1;
                         wr_buf_rd_en <= '1';
                     elsif strobe_count /= 0 then
                         strobe_count := strobe_count - 1;
                     end if;
 
                     DIDSTRB <= '1';
-                    if strobe_count > 3 then
+                    if strobe_count > DIDSTRB_div / 2 - 1 then
                         DIDSTRB <= '0';
                     end if;
 
