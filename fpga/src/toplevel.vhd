@@ -84,6 +84,11 @@ begin
 
     -- Top-level command processor
     -- Supervise all the things
+    -- TODO
+    -- When refactoring this to be interrupt-driven with a master MCU, allow reading the
+    -- entire state (SR + DI command) with a single SPI transaction to minimize overhead
+    -- Also implement all ACKs and status changes as a single write of the corresponding
+    -- bits to the status register
     process (clk)
         type state_t is (
             cmd,

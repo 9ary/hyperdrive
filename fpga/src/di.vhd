@@ -11,7 +11,7 @@ entity di is
 
         cmd : out di_cmd_t; -- Command buffer
         cmd_ready : out std_logic;
-        resetting : out std_logic;
+        resetting : out std_logic; -- TODO make this stateful
         wr_data : in std_logic_vector(7 downto 0);
         ctrl : in di_ctrl_t;
 
