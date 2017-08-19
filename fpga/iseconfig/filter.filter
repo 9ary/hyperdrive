@@ -4,5 +4,4 @@
 <!--advised that users do not directly edit the contents of this file.                               -->
 <!--                                                                                                 -->
 <filters xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation='filter.xsd'>
-<filter task="bitgen" file="PhysDesignRules" num="2410" type="warning"></filter>
 </filters>
