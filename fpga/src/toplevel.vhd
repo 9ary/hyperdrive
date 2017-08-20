@@ -33,16 +33,16 @@ entity hyperdrive is
         sclk : in std_logic;
         mosi : in std_logic;
         miso : out std_logic;
-        scs : in std_logic
+        scs : in std_logic;
+        int : out std_logic
     );
 end hyperdrive;
 
 architecture Behavioral of hyperdrive is
+    signal di_status : std_logic_vector(7 downto 0);
     signal di_cmd : di_cmd_t;
-    signal di_resetting : std_logic;
-    signal di_cmd_ready : std_logic;
-    signal di_wr_data : std_logic_vector(7 downto 0);
     signal di_ctrl : di_ctrl_t;
+    signal di_ctrl_arg : std_logic_vector(7 downto 0);
 
     signal host_data_in : std_logic_vector(7 downto 0);
     signal host_data_out : std_logic_vector(7 downto 0);
@@ -54,11 +54,10 @@ begin
 
     gc : di port map (
         clk => clk,
+        status => di_status,
         cmd => di_cmd,
-        resetting => di_resetting,
-        cmd_ready => di_cmd_ready,
-        wr_data => di_wr_data,
         ctrl => di_ctrl,
+        ctrl_arg => di_ctrl_arg,
         DIHSTRB => DIHSTRB,
         DIDIR => DIDIR,
         DIBRK => DIBRK,
@@ -84,81 +83,59 @@ begin
 
     -- Top-level command processor
     -- Supervise all the things
-    -- TODO
-    -- When refactoring this to be interrupt-driven with a master MCU, allow reading the
-    -- entire state (SR + DI command) with a single SPI transaction to minimize overhead
-    -- Also implement all ACKs and status changes as a single write of the corresponding
-    -- bits to the status register
     process (clk)
         type state_t is (
-            cmd,
-            read_di_cmd,
-            write_di_data
+            idle,
+            read,
+            write
         );
         variable state : state_t;
 
-        variable read_di_cmd_count : natural range 0 to 12;
+        variable read_count : natural range 0 to 12;
     begin
         if rising_edge(clk) then
             di_ctrl <= none;
             host_data_out <= x"FF";
             host_push <= '0';
 
+            -- Bits cmd_ready, reset or break are set in the status register
+            int <= di_status(2) or di_status(1) or di_status(0);
+
             if host_enable = '0' then
-                state := cmd;
+                state := idle;
+
+                -- Instant readout of the status register
+                host_data_out <= di_status;
+                host_push <= '1';
             else
-                case state is
-                    when cmd =>
-                        if host_strobe = '1' then
-                            case host_data_in is
-                                when x"01" =>
-                                    host_data_out <= (
-                                        0 => di_resetting,
-                                        1 => di_cmd_ready,
-                                        others => '0');
-                                    host_push <= '1';
-
-                                when x"03" =>
-                                    di_ctrl <= lid_close;
-
-                                when x"04" =>
-                                    di_ctrl <= lid_open;
-
-                                when x"05" =>
-                                    di_ctrl <= ack_cmd;
-                                    host_data_out <= di_cmd(0);
-                                    host_push <= '1';
-                                    read_di_cmd_count := 1;
-                                    state := read_di_cmd;
-
-                                when x"06" =>
-                                    state := write_di_data;
-
-                                when x"FF" => -- Special case for reads
-                                    null;
-
-                                when others => -- Invalid command
-                                    host_data_out <= x"AA";
-                                    host_push <= '1';
-                            end case;
-                        end if;
-
-                    when read_di_cmd =>
-                        if host_strobe = '1' then
-                            host_data_out <= di_cmd(read_di_cmd_count);
-                            host_push <= '1';
-                            read_di_cmd_count := read_di_cmd_count + 1;
-                            if read_di_cmd_count = 12 then
-                                state := cmd;
+                if host_strobe = '1' then
+                    case state is
+                        when idle =>
+                            -- TODO make sure that this is the value the future
+                            -- master outputs while reading
+                            if host_data_in = x"00" then
+                                state := read;
+                                -- First byte of the command here
+                                host_data_out <= di_cmd(0);
+                                host_push <= '1';
+                                read_count := 1;
+                            else
+                                di_ctrl <= set_status;
+                                di_ctrl_arg <= host_data_in;
+                                state := write;
                             end if;
-                        end if;
 
-                    when write_di_data =>
-                        if host_strobe = '1' then
-                            di_wr_data <= host_data_in;
+                        when read =>
+                            host_data_out <= di_cmd(read_count);
+                            host_push <= '1';
+                            read_count := read_count + 1;
+                            -- Overreading is undefined behavior
+
+                        when write =>
                             di_ctrl <= bus_write;
-                        end if;
-                end case;
+                            di_ctrl_arg <= host_data_in;
+                    end case;
+                end if;
             end if;
         end if;
     end process;

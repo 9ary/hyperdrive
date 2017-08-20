@@ -43,21 +43,18 @@ package components is
     type di_cmd_t is array(11 downto 0) of std_logic_vector(7 downto 0);
     type di_ctrl_t is (
         none,
-        lid_open,
-        lid_close,
-        bus_write,
-        ack_cmd
+        set_status,
+        bus_write
     );
 
     component di
         port (
             clk : in std_logic;
 
+            status : out std_logic_vector(7 downto 0);
             cmd : out di_cmd_t; -- Command buffer
-            resetting : out std_logic;
-            cmd_ready : out std_logic;
-            wr_data : in std_logic_vector(7 downto 0);
             ctrl : in di_ctrl_t;
+            ctrl_arg : in std_logic_vector(7 downto 0);
 
             -- Control signals
             DIHSTRB : in std_logic; -- Host strobe

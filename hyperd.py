@@ -5,47 +5,49 @@ import sys
 
 import mpsse
 
+STATUS_CMD_READY = 1 << 0
+STATUS_RESET = 1 << 1
+# TODO break
+STATUS_COVER = 1 << 3
+# TODO error
+
 with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
         open(sys.argv[1], "rb") as gcm:
 
-    def read_status():
-        spi.Write(b"\x01")
-        return struct.unpack(">B", spi.Read(1))[0]
+    def hyperdrive_read():
+        spi.Start()
+        d = spi.Read(13) # Status register + 12 byte command
+        spi.Stop()
+        return d[0], struct.unpack(">LLL", d[1:])
 
-    def lid_close():
-        spi.Write(b"\x03")
-
-    def lid_open():
-        spi.Write(b"\x04")
-
-    def read_cmd():
-        spi.Write(b"\x05")
-        return struct.unpack(">LLL", spi.Read(12))
-
-    def write_data(buf):
-        spi.Write(b"\x06")
+    def hyperdrive_write(status, buf = None):
+        spi.Start()
+        buf = bytes([status | 1 << 7]) + (buf or bytes())
         chunksize = 32 * 1024
         while buf:
             spi.Write(buf[:chunksize])
             buf = buf[chunksize:]
         spi.Stop()
-        spi.Start()
 
-    spi.Start()
-
-    lid_open()
+    spi.SetDirection(0b11010111)
 
     while True:
-        status = read_status()
+        spi.WaitIO(True)
+        status, cmd = hyperdrive_read()
 
-        if status & (1 << 0):
+        setstatus = 0
+
+        if status & STATUS_RESET:
+            setstatus |= STATUS_RESET
+
+        if status & STATUS_COVER:
+            setstatus |= STATUS_COVER
+
+        if not status & STATUS_CMD_READY:
+            hyperdrive_write(setstatus)
             continue
-        lid_close()
 
-        if not status & (1 << 1):
-            continue
-
-        cmd = read_cmd()
+        setstatus |= STATUS_CMD_READY
 
         if cmd[0] >> 24 == 0xA8:
             print(f"Reading 0x{cmd[2]:X} bytes at 0x{cmd[1] << 2:X}")
@@ -60,38 +62,38 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
                 data[o] = 0x02
                 data = bytes(data)
 
-            write_data(data)
+            write_buf = data
 
         elif cmd[0] >> 24 == 0x12:
             print("Drive ID")
-            write_data(struct.pack(">LLLLLLLL", 0, 0x20010608, 0x61000000, 0, 0, 0, 0, 0))
+            write_buf = struct.pack(">LLLLLLLL", 0, 0x20010608, 0x61000000, 0, 0, 0, 0, 0)
 
         elif cmd[0] >> 24 == 0xE0:
             print("error status")
-            write_data(bytes(4))
+            write_buf = bytes(4)
 
         elif cmd[0] >> 24 == 0xE3:
             print("stop motor")
-            write_data(bytes(4))
+            write_buf = bytes(4)
 
         elif cmd[0] >> 24 == 0xE4:
             print("audio streaming setup")
-            write_data(bytes(4))
+            write_buf = bytes(4)
 
         elif cmd[0] >> 24 == 0xE1:
             print("play audio stream")
-            write_data(bytes(4))
+            write_buf = bytes(4)
 
         elif cmd[0] >> 24 == 0xE2:
             print("audio streaming status")
-            write_data(bytes(4))
+            write_buf = bytes(4)
 
         elif cmd[0] >> 24 == 0xDF:
             print("wkf command")
-            write_data(bytes(4))
+            write_buf = bytes(4)
 
         else:
             print(f"Unhandled command 0x{cmd[0]:0{8}X} 0x{cmd[1]:0{8}X} 0x{cmd[2]:0{8}X}")
             sys.exit(1)
 
-    spi.Stop()
+        hyperdrive_write(setstatus, write_buf)

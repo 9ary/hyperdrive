@@ -9,11 +9,10 @@ entity di is
     port (
         clk : in std_logic;
 
+        status : out std_logic_vector(7 downto 0);
         cmd : out di_cmd_t; -- Command buffer
-        cmd_ready : out std_logic;
-        resetting : out std_logic; -- TODO make this stateful
-        wr_data : in std_logic_vector(7 downto 0);
         ctrl : in di_ctrl_t;
+        ctrl_arg : in std_logic_vector(7 downto 0);
 
         -- Control signals
         DIHSTRB : in std_logic; -- Host strobe
@@ -62,10 +61,15 @@ begin
         variable DIHSTRB_sync : std_logic;
         variable DIDIR_sync : std_logic;
         variable DIBRK_sync : std_logic;
+        variable DIRSTB_prev : std_logic;
         variable DIRSTB_sync : std_logic;
         variable DID_sync : std_logic_vector(7 downto 0);
 
-        variable cover_state : std_logic;
+        variable status_cmd_ready : std_logic;
+        variable status_reset : std_logic;
+        -- TODO break
+        variable status_cover : std_logic;
+        -- TODO error
 
         variable ack : std_logic;
         variable cmd_bytes : natural range 0 to 12;
@@ -80,15 +84,20 @@ begin
                 DICOVER <= 'Z';
                 DID <= (others => 'Z');
 
-                cover_state := '1'; -- Open by default
+                status_cmd_ready := '0';
+                status_reset := '0';
+                status_cover := '1'; -- Open by default
 
                 ack := '0';
                 cmd_bytes := 0;
 
                 host_ready := '0';
                 strobe_count := 0;
-                cmd_ready <= '0';
             else
+                if DIRSTB_prev = '0' then
+                    status_reset := '1';
+                end if;
+
                 -- TODO handle DIBRK
 
                 wr_buf_wr_en <= '0';
@@ -96,19 +105,24 @@ begin
 
                 case ctrl is
                     when none => null;
-                    when lid_close => cover_state := '0';
-                    when lid_open => cover_state := '1';
+
+                    when set_status =>
+                        status_cmd_ready := status_cmd_ready and not ctrl_arg(0);
+                        status_reset := status_reset and not ctrl_arg(1);
+                        -- TODO break
+                        status_cover := status_cover xor ctrl_arg(3);
+                        -- TODO error
+
                     when bus_write =>
-                        wr_buf_din <= wr_data;
+                        wr_buf_din <= ctrl_arg;
                         wr_buf_wr_en <= '1';
-                    when ack_cmd => cmd_ready <= '0';
                 end case;
 
                 if DIDIR_sync = '0' then
                     -- Receiving
+                    status_cmd_ready := '0';
                     host_ready := '0';
                     strobe_count := 0;
-                    cmd_ready <= '0';
 
                     if DIHSTRB_prev = '0' and DIHSTRB_sync = '1' and cmd_bytes /= 12 then
                         cmd(cmd_bytes) <= DID_sync;
@@ -124,7 +138,7 @@ begin
                 else
                     -- Sending
                     if cmd_bytes = 12 then
-                        cmd_ready <= '1';
+                        status_cmd_ready := '1';
                     end if;
                     ack := '0';
                     cmd_bytes := 0;
@@ -149,17 +163,25 @@ begin
                 end if;
 
                 DIERRB <= '1'; -- TODO
-                DICOVER <= cover_state;
+                DICOVER <= status_cover;
             end if;
 
             wr_buf_rst <= not host_ready;
 
-            resetting <= not DIRSTB_sync;
+            status <= (
+                0 => status_cmd_ready,
+                1 => status_reset,
+                -- TODO break
+                3 => status_cover,
+                -- TODO error
+                others => '0'
+            );
 
             DIHSTRB_prev := DIHSTRB_sync;
             DIHSTRB_sync := DIHSTRB;
             DIDIR_sync := DIDIR;
             DIBRK_sync := DIBRK;
+            DIRSTB_prev := DIRSTB_sync;
             DIRSTB_sync := DIRSTB;
             DID_sync := DID;
         end if;
