@@ -32,7 +32,7 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
     spi.SetDirection(0b11010111)
 
     while True:
-        spi.WaitIO(True)
+        #spi.WaitIO(True)
         status, cmd = hyperdrive_read()
 
         setstatus = 0
