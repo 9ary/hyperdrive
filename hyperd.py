@@ -10,6 +10,7 @@ STATUS_RESET = 1 << 1
 # TODO break
 STATUS_COVER = 1 << 3
 # TODO error
+STATUS_BUSY = 1 << 5
 
 with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
         open(sys.argv[1], "rb") as gcm:
@@ -44,6 +45,7 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
             setstatus |= STATUS_COVER
 
         if not status & STATUS_CMD_READY:
+            setstatus |= STATUS_BUSY
             hyperdrive_write(setstatus)
             continue
 
