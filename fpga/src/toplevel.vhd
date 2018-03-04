@@ -50,7 +50,7 @@ architecture Behavioral of hyperdrive is
     signal host_strobe : std_logic;
     signal host_push : std_logic;
 begin
-    led <= (0 => DIDIR, others => '1');
+    led <= (0 => DIDIR, 7 => '1', others => '0');
 
     gc : di port map (
         clk => clk,
