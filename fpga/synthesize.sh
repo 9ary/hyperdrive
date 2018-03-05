@@ -23,12 +23,14 @@ run
 -ofmt NGC
 -p ${partname}-${partspeed}-${partpackage}
 -top ${projname}
+-opt_mode speed
+-opt_level 1
 EOF
 
 # HDL file listing
 find "${basedir}/src" -iname *.vhd -fprintf "${projname}.prj" 'vhdl work "%p"\n'
 
-"${XILINX_ISE}/xst" -ifn "${projname}.xst" -ofn "${projname}.syr" 
+"${XILINX_ISE}/xst" -ifn "${projname}.xst" -ofn "${projname}.syr"
 
 "${XILINX_ISE}/ngdbuild" -dd _ngo -uc "${basedir}/${ucf}" -p "${partname}-${partpackage}-${partspeed}" "${projname}.ngc" "${projname}.ngd"
 
@@ -37,11 +39,13 @@ find "${basedir}/src" -iname *.vhd -fprintf "${projname}.prj" 'vhdl work "%p"\n'
 "${XILINX_ISE}/par" -w -mt 4 "${projname}_map.ncd" "${projname}.ncd"
 
 # TODO generate timing report?
-#trce -v 3 -s 2 -n 3 -fastpaths -xml hyperdrive.twx hyperdrive.ncd -o hyperdrive.twr hyperdrive.pcf 
+#trce -v 3 -s 2 -n 3 -fastpaths -xml hyperdrive.twx hyperdrive.ncd -o hyperdrive.twr hyperdrive.pcf
 
 # BitGen options
 cat > "${projname}.ut" << EOF
 -w
+-g Binary:Yes
+-g Compress
 -g UnusedPin:PullNone
 EOF
 
@@ -56,4 +60,4 @@ program -p 1
 exit
 EOF
 
-"${XILINX_ISE}/impact" -batch "${projname}_impact.cmd"
+[[ "$1" == "load" ]] && "${XILINX_ISE}/impact" -batch "${projname}_impact.cmd"
