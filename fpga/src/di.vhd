@@ -33,6 +33,9 @@ architecture drive of di is
     -- At 100MHz, /8 (12.5MHz) is the closest to the real drive's 38/3MHz
     -- /6 (16.667MHz) appears to work fine, and is what the Wii uses according to Dolphin
     -- /4 doesn't get even get close to booting
+    -- It's possible to overclock the bus to at least 20MHz with the current wired setup
+    -- by holding DIDSTRB high for 3 cycles, then low for 2 cycles. Needs more testing
+    -- on the final design.
     constant DIDSTRB_div : natural := 8;
 
     signal wr_buf_rst : std_logic;
