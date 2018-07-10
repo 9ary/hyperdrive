@@ -7,6 +7,8 @@ ucf="mimas.ucf"
 partname="xc6slx9"
 partpackage="tqg144"
 partspeed="2"
+spipart="M25P16"
+spisize="2048"
 workdir="work"
 
 # Get ourselves into a sane environment
@@ -53,17 +55,28 @@ EOF
     "${XILINX_ISE}/bitgen" -f "${projname}.ut" "${projname}.ncd"
 }
 
-load() {
-    # Impact options
+_impact() {
     cat > "${projname}_impact.cmd" << EOF
 setMode -bs
 setCable -p usb21 -b 12000000
 addDevice -p 1 -file ${projname}.bit
-program -p 1
+attachFlash -p 1 -spi ${spipart}
+assignFileToAttachedFlash -p 1 -file ${projname}.mcs
+program -p 1 $@
 exit
 EOF
 
     "${XILINX_ISE}/impact" -batch "${projname}_impact.cmd"
+}
+
+load() {
+    _impact
+}
+
+flash() {
+    "${XILINX_ISE}/promgen" -u 0000 "${projname}.bit" -s ${spisize} -spi -w -o "${projname}"
+
+    _impact -spionly -e -v -loadfpga
 }
 
 for action in $@; do
