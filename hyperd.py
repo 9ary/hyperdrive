@@ -57,11 +57,11 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
             data = gcm.read(cmd[2])
             data += bytes(cmd[2] - len(data))
 
-            # Patch game region to PAL
+            # Patch game region to NTSC-U
             o = 0x45B - (cmd[1] << 2)
             if o >= 0 and o < cmd[2]:
                 data = bytearray(data)
-                data[o] = 0x02
+                data[o] = 0x01
                 data = bytes(data)
 
             write_buf = data
