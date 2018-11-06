@@ -41,8 +41,8 @@ EOF
 
     "${XILINX_ISE}/par" -w -mt 4 "${projname}_map.ncd" "${projname}.ncd"
 
-    # TODO generate timing report?
-    #trce -v 3 -s 2 -n 3 -fastpaths -xml hyperdrive.twx hyperdrive.ncd -o hyperdrive.twr hyperdrive.pcf
+    # Post-PAR timing report
+    "${XILINX_ISE}/trce" -v -n -fastpaths "${projname}.ncd" -o "${projname}.twr" "${projname}_map.pcf"
 
     # BitGen options
     cat > "${projname}.ut" << EOF
