@@ -73,7 +73,6 @@ begin
         -- TODO break
         variable status_cover : std_logic;
         -- TODO error
-        variable status_busy : std_logic;
 
         variable ack : std_logic;
         variable cmd_bytes : natural range 0 to 12;
@@ -93,7 +92,6 @@ begin
                 -- TODO break
                 status_cover := '1'; -- Open by default
                 -- TODO error
-                status_busy := '1';
 
                 ack := '0';
                 cmd_bytes := 0;
@@ -119,7 +117,6 @@ begin
                         -- TODO break
                         status_cover := status_cover xor ctrl_arg(3);
                         -- TODO error
-                        status_busy := status_busy and not ctrl_arg(5);
 
                     when bus_write =>
                         wr_buf_din <= ctrl_arg;
@@ -142,13 +139,12 @@ begin
                     end if;
 
                     DID <= (others => 'Z');
-                    DIDSTRB <= status_busy or ack;
+                    DIDSTRB <= ack;
                 else
                     -- Sending
                     if cmd_bytes = 12 then
                         status_cmd_ready := '1';
                     end if;
-                    status_busy := '1';
                     ack := '0';
                     cmd_bytes := 0;
 
@@ -183,7 +179,6 @@ begin
                 -- TODO break
                 3 => status_cover,
                 -- TODO error
-                5 => status_busy,
                 others => '0'
             );
 
