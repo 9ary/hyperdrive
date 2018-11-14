@@ -70,6 +70,41 @@ package components is
             DID : inout std_logic_vector(7 downto 0)
         );
     end component;
+
+    component analyzer is
+        generic (
+            constant sample_bytes : positive := 1;
+            constant sample_depth : positive := 1024;
+            constant pre_trigger_samples : positive := 0
+        );
+        port (
+            clk : in std_logic;
+
+            trigger : in std_logic;
+            data : in std_logic_vector(sample_bytes * 8 - 1 downto 0);
+
+            tx : out std_logic;
+            rx : in std_logic
+        );
+    end component;
+
+    component uart is
+        generic (
+            baud : positive;
+            clock_frequency : positive
+        );
+        port (
+            clock : in std_logic;
+            reset : in std_logic;
+            data_stream_in : in std_logic_vector(7 downto 0);
+            data_stream_in_stb : in std_logic;
+            data_stream_in_ack : out std_logic;
+            data_stream_out : out std_logic_vector(7 downto 0);
+            data_stream_out_stb : out std_logic;
+            tx : out std_logic;
+            rx : in std_logic
+        );
+    end component;
 end components;
 
 package body components is

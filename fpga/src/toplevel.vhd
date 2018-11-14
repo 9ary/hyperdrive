@@ -22,9 +22,9 @@ entity hyperdrive is
         DIBRK : in std_logic; -- Host cancel
         DIRSTB : in std_logic; -- Host reset
 
-        DIDSTRB : out std_logic; -- Drive strobe
-        DIERRB : out std_logic; -- Drive error
-        DICOVER : out std_logic; -- Lid state
+        DIDSTRB : inout std_logic; -- Drive strobe
+        DIERRB : inout std_logic; -- Drive error
+        DICOVER : inout std_logic; -- Lid state
 
         -- Data
         DID : inout std_logic_vector(7 downto 0);
@@ -34,7 +34,11 @@ entity hyperdrive is
         mosi : in std_logic;
         miso : out std_logic;
         scs : in std_logic;
-        int : out std_logic
+        int : out std_logic;
+
+        -- PIC UART
+        tx : out std_logic;
+        rx : in std_logic
     );
 end hyperdrive;
 
@@ -51,6 +55,17 @@ architecture Behavioral of hyperdrive is
     signal host_push : std_logic;
 begin
     led <= (0 => DIDIR, 7 => '1', others => '0');
+
+    di_analyzer : analyzer generic map (
+        sample_bytes => 2,
+        pre_trigger_samples => 256
+    ) port map (
+        clk => clk,
+        trigger => di_status(0),
+        data => '0' & DIHSTRB & DIDIR & DIBRK & DIRSTB & DIDSTRB & DIERRB & DICOVER & DID,
+        tx => tx,
+        rx => rx
+    );
 
     gc : di port map (
         clk => clk,
