@@ -14,6 +14,7 @@ entity std_fifo is
         wr_en : in std_logic;
         din : in std_logic_vector(data_width - 1 downto 0);
         full : out std_logic;
+        almost_full : out std_logic;
 
         rd_en : in std_logic;
         dout : out std_logic_vector(data_width - 1 downto 0);
@@ -42,6 +43,7 @@ begin
                 looped := false;
 
                 full <= '0';
+                almost_full <= '0';
                 empty <= '1';
             else
 
@@ -80,6 +82,12 @@ begin
                 else
                     empty <= '0';
                     full <= '0';
+
+                    if (head - tail) rem fifo_depth <= 4 then
+                        almost_full <= '1';
+                    else
+                        almost_full <= '0';
+                    end if;
                 end if;
 
             end if;

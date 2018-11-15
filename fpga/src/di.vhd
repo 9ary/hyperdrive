@@ -54,6 +54,7 @@ begin
         wr_en => wr_buf_wr_en,
         din => wr_buf_din,
         full => open,
+        almost_full => open,
         rd_en => wr_buf_rd_en,
         dout => wr_buf_dout,
         empty => wr_buf_empty

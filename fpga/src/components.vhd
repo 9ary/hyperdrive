@@ -16,6 +16,7 @@ package components is
             wr_en : in std_logic;
             din : in std_logic_vector(data_width - 1 downto 0);
             full : out std_logic;
+            almost_full : out std_logic;
 
             rd_en : in std_logic;
             dout : out std_logic_vector(data_width - 1 downto 0);
