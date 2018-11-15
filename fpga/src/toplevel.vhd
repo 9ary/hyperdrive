@@ -43,6 +43,8 @@ entity hyperdrive is
 end hyperdrive;
 
 architecture Behavioral of hyperdrive is
+    signal analyzer_data : std_logic_vector(15 downto 0);
+
     signal di_status : di_status_t;
     signal di_ctrl : di_ctrl_t;
     signal di_cmd : di_cmd_t;
@@ -55,13 +57,14 @@ architecture Behavioral of hyperdrive is
 begin
     led <= (0 => DIDIR, 7 => '1', others => '0');
 
+    analyzer_data <= '0' & DIHSTRB & DIDIR & DIBRK & DIRSTB & DIDSTRB & DIERRB & DICOVER & DID;
     di_analyzer : analyzer generic map (
         sample_bytes => 2,
         pre_trigger_samples => 256
     ) port map (
         clk => clk,
         trigger => di_status.cmd,
-        data => '0' & DIHSTRB & DIDIR & DIBRK & DIRSTB & DIDSTRB & DIERRB & DICOVER & DID,
+        data => analyzer_data,
         tx => tx,
         rx => rx
     );
