@@ -42,20 +42,29 @@ package components is
     end component;
 
     type di_cmd_t is array(11 downto 0) of std_logic_vector(7 downto 0);
-    type di_ctrl_t is (
-        none,
-        set_status,
-        bus_write
-    );
+
+    type di_status_t is record
+        cmd : std_logic;
+        reset : std_logic;
+        break : std_logic;
+        lid : std_logic;
+        err : std_logic;
+    end record;
+
+    type di_ctrl_t is record
+        status : di_status_t;
+        set_status : std_logic;
+        write_data : std_logic_vector(7 downto 0);
+        write_enable : std_logic;
+    end record;
 
     component di
         port (
             clk : in std_logic;
 
-            status : out std_logic_vector(7 downto 0);
-            cmd : out di_cmd_t; -- Command buffer
+            status : out di_status_t;
             ctrl : in di_ctrl_t;
-            ctrl_arg : in std_logic_vector(7 downto 0);
+            cmd : out di_cmd_t; -- Command buffer
 
             -- Control signals
             DIHSTRB : in std_logic; -- Host strobe

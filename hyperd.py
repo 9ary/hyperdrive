@@ -7,7 +7,7 @@ import mpsse
 
 STATUS_CMD_READY = 1 << 0
 STATUS_RESET = 1 << 1
-# TODO break
+STATUS_BREAK = 1 << 2
 STATUS_COVER = 1 << 3
 # TODO error
 
@@ -39,6 +39,9 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
 
         if status & STATUS_RESET:
             setstatus |= STATUS_RESET
+
+        if status & STATUS_BREAK:
+            setstatus |= STATUS_BREAK
 
         if status & STATUS_COVER:
             setstatus |= STATUS_COVER

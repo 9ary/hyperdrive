@@ -43,10 +43,9 @@ entity hyperdrive is
 end hyperdrive;
 
 architecture Behavioral of hyperdrive is
-    signal di_status : std_logic_vector(7 downto 0);
-    signal di_cmd : di_cmd_t;
+    signal di_status : di_status_t;
     signal di_ctrl : di_ctrl_t;
-    signal di_ctrl_arg : std_logic_vector(7 downto 0);
+    signal di_cmd : di_cmd_t;
 
     signal host_data_in : std_logic_vector(7 downto 0);
     signal host_data_out : std_logic_vector(7 downto 0);
@@ -61,7 +60,7 @@ begin
         pre_trigger_samples => 256
     ) port map (
         clk => clk,
-        trigger => di_status(0),
+        trigger => di_status.cmd,
         data => '0' & DIHSTRB & DIDIR & DIBRK & DIRSTB & DIDSTRB & DIERRB & DICOVER & DID,
         tx => tx,
         rx => rx
@@ -70,9 +69,8 @@ begin
     gc : di port map (
         clk => clk,
         status => di_status,
-        cmd => di_cmd,
         ctrl => di_ctrl,
-        ctrl_arg => di_ctrl_arg,
+        cmd => di_cmd,
         DIHSTRB => DIHSTRB,
         DIDIR => DIDIR,
         DIBRK => DIBRK,
@@ -109,18 +107,25 @@ begin
         variable read_count : natural range 0 to 12;
     begin
         if rising_edge(clk) then
-            di_ctrl <= none;
+            di_ctrl.set_status <= '0';
+            di_ctrl.write_enable <= '0';
             host_data_out <= x"FF";
             host_push <= '0';
 
-            -- Bits cmd_ready, reset or break are set in the status register
-            int <= di_status(2) or di_status(1) or di_status(0);
+            int <= di_status.cmd or di_status.reset or di_status.err;
 
             if host_enable = '0' then
                 state := idle;
 
                 -- Instant readout of the status register
-                host_data_out <= di_status;
+                host_data_out <= (
+                    0 => di_status.cmd,
+                    1 => di_status.reset,
+                    2 => di_status.break,
+                    3 => di_status.lid,
+                    4 => di_status.err,
+                    others => '0'
+                );
                 host_push <= '1';
             else
                 if host_strobe = '1' then
@@ -135,8 +140,12 @@ begin
                                 host_push <= '1';
                                 read_count := 1;
                             else
-                                di_ctrl <= set_status;
-                                di_ctrl_arg <= host_data_in;
+                                di_ctrl.status.cmd <= host_data_in(0);
+                                di_ctrl.status.reset <= host_data_in(1);
+                                di_ctrl.status.break <= host_data_in(2);
+                                di_ctrl.status.lid <= host_data_in(3);
+                                di_ctrl.status.err <= host_data_in(4);
+                                di_ctrl.set_status <= '1';
                                 state := write;
                             end if;
 
@@ -147,8 +156,8 @@ begin
                             -- Overreading is undefined behavior
 
                         when write =>
-                            di_ctrl <= bus_write;
-                            di_ctrl_arg <= host_data_in;
+                            di_ctrl.write_data <= host_data_in;
+                            di_ctrl.write_enable <= '1';
                     end case;
                 end if;
             end if;
