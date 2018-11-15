@@ -56,6 +56,7 @@ EOF
 }
 
 _impact() {
+    touch -a "${projname}.mcs"
     cat > "${projname}_impact.cmd" << EOF
 setMode -bs
 setCable -p usb21 -b 12000000
