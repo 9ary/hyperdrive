@@ -85,6 +85,7 @@ begin
     );
 
     process (clk)
+        variable restarting : std_logic;
         variable lid : std_logic;
 
         variable rd_bytes : natural range 0 to 12;
@@ -105,6 +106,7 @@ begin
                 status.cmd <= '0';
 
                 rd_buf_rst <= '1';
+                restarting := '1';
                 rd_bytes := 0;
 
                 wr_buf_rst <= '1';
@@ -128,9 +130,11 @@ begin
                     end if;
                     if ctrl.status.reset = '1' then
                         status.reset <= '0';
+                        restarting := '0';
                     end if;
                     if ctrl.status.break = '1' then
                         status.break <= '0';
+                        restarting := '0';
                     end if;
                     lid := lid xor ctrl.status.lid;
                     -- TODO error
@@ -138,7 +142,7 @@ begin
 
                 if DIDIR_sync = '0' then
                     if rd_bytes = 0 then
-                        DIDSTRB <= '0';
+                        DIDSTRB <= restarting;
                     end if;
 
                     if DIHSTRB_sync = "01" and rd_bytes /= 12 then
