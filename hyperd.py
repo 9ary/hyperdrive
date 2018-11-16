@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import binascii
 import signal
 import struct
 import sys
@@ -97,6 +98,14 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
         elif cmd[0] >> 24 == 0xDF:
             print("wkf command")
             write_buf = bytes(4)
+
+        elif cmd[0] >> 24 == 0xFE:
+            print("DMA write test")
+            hyperdrive_write(setstatus)
+            spi.Start()
+            print(binascii.hexlify(spi.Read(cmd[2])))
+            spi.Stop()
+            continue
 
         else:
             print(f"Unhandled command 0x{cmd[0]:0{8}X} 0x{cmd[1]:0{8}X} 0x{cmd[2]:0{8}X}")

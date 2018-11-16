@@ -90,7 +90,14 @@ begin
         variable lid : std_logic;
         variable err : std_logic;
 
-        variable rd_bytes : natural range 0 to 12;
+        type xfer_type_t is (
+            read,
+            write,
+            write_imm
+        );
+        variable xfer_type : xfer_type_t;
+        variable xfer_length : unsigned(31 downto 0);
+        variable rd_bytes : unsigned(31 downto 0);
 
         variable write_ready : std_logic;
         variable strobe_count : natural range 0 to DIDSTRB_div - 1;
@@ -109,7 +116,7 @@ begin
 
                 rd_buf_rst <= '1';
                 restarting := '1';
-                rd_bytes := 0;
+                rd_bytes := to_unsigned(0, 32);
 
                 wr_buf_rst <= '1';
                 write_ready := '0';
@@ -143,11 +150,7 @@ begin
                 end if;
 
                 if DIDIR_sync = '0' then
-                    if rd_bytes = 0 then
-                        DIDSTRB <= restarting;
-                    end if;
-
-                    if DIHSTRB_sync = "01" and rd_bytes /= 12 then
+                    if DIHSTRB_sync = "01" then
                         rd_buf_din <= DID_sync;
                         rd_buf_wr_en <= '1';
                         rd_bytes := rd_bytes + 1;
@@ -158,8 +161,32 @@ begin
                         if rd_bytes = 12 then
                             status.cmd <= '1';
                         end if;
+
+                        if rd_bytes = 1 then
+                            case DID_sync is
+                                when x"FD" =>
+                                    xfer_type := write_imm;
+                                    xfer_length := to_unsigned(4, 32);
+
+                                when x"FE" =>
+                                    xfer_type := write;
+
+                                when others =>
+                                    xfer_type := read;
+                            end case;
+                        end if;
+                        if xfer_type = write and rd_bytes > 8 and rd_bytes <= 12 then
+                            xfer_length := xfer_length(23 downto 0) & unsigned(DID_sync);
+                        end if;
+                        if xfer_type /= read and rd_bytes = xfer_length + 12 then
+                            rd_bytes := to_unsigned(0, 32);
+                        end if;
                     end if;
 
+                    DIDSTRB <= restarting or rd_buf_almost_full;
+                    if xfer_type = read and rd_bytes > 8 then
+                        DIDSTRB <= '1';
+                    end if;
                     DID <= (others => 'Z');
 
                     wr_buf_rst <= '1';
@@ -183,7 +210,7 @@ begin
                         DIDSTRB <= '0';
                     end if;
 
-                    rd_bytes := 0;
+                    rd_bytes := to_unsigned(0, 32);
                 end if;
 
                 DICOVER <= lid;
