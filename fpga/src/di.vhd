@@ -11,7 +11,7 @@ entity di is
 
         status : out di_status_t;
         ctrl : in di_ctrl_t;
-        cmd : out di_cmd_t; -- Command buffer
+        read_data : out std_logic_vector(7 downto 0);
 
         -- Control signals
         DIHSTRB : in std_logic; -- Host strobe
@@ -43,11 +43,32 @@ architecture drive of di is
     signal DIRSTB_sync : std_logic;
     signal DID_sync : std_logic_vector(7 downto 0);
 
+    signal rd_buf_rst : std_logic;
+    signal rd_buf_wr_en : std_logic;
+    signal rd_buf_din : std_logic_vector(7 downto 0);
+    signal rd_buf_almost_full : std_logic;
+
     signal wr_buf_rst : std_logic;
     signal wr_buf_rd_en : std_logic;
     signal wr_buf_dout : std_logic_vector(7 downto 0);
     signal wr_buf_empty : std_logic;
 begin
+    rd_buf : std_fifo generic map (
+        fallthrough => true,
+        data_width => 8,
+        fifo_depth => 2 * 1024
+    ) port map (
+        clk => clk,
+        rst => rd_buf_rst,
+        wr_en => rd_buf_wr_en,
+        din => rd_buf_din,
+        full => open,
+        almost_full => rd_buf_almost_full,
+        rd_en => ctrl.read_enable,
+        dout => read_data,
+        empty => open
+    );
+
     wr_buf : std_fifo generic map (
         data_width => 8,
         fifo_depth => 2 * 1024
@@ -66,12 +87,13 @@ begin
     process (clk)
         variable lid : std_logic;
 
-        variable cmd_bytes : natural range 0 to 12;
+        variable rd_bytes : natural range 0 to 12;
 
         variable write_ready : std_logic;
         variable strobe_count : natural range 0 to DIDSTRB_div - 1;
     begin
         if rising_edge(clk) then
+            rd_buf_rst <= '0';
             wr_buf_rst <= '0';
 
             if DIRSTB_sync = '0' or DIBRK_sync = '1' then
@@ -82,7 +104,8 @@ begin
 
                 status.cmd <= '0';
 
-                cmd_bytes := 0;
+                rd_buf_rst <= '1';
+                rd_bytes := 0;
 
                 wr_buf_rst <= '1';
                 write_ready := '0';
@@ -96,6 +119,7 @@ begin
                     status.break <= '1';
                 end if;
             else
+                rd_buf_wr_en <= '0';
                 wr_buf_rd_en <= '0';
 
                 if ctrl.set_status = '1' then
@@ -113,18 +137,19 @@ begin
                 end if;
 
                 if DIDIR_sync = '0' then
-                    if cmd_bytes = 0 then
+                    if rd_bytes = 0 then
                         DIDSTRB <= '0';
                     end if;
 
-                    if DIHSTRB_sync = "01" and cmd_bytes /= 12 then
-                        cmd(cmd_bytes) <= DID_sync;
-                        cmd_bytes := cmd_bytes + 1;
+                    if DIHSTRB_sync = "01" and rd_bytes /= 12 then
+                        rd_buf_din <= DID_sync;
+                        rd_buf_wr_en <= '1';
+                        rd_bytes := rd_bytes + 1;
 
-                        if cmd_bytes = 9 then
+                        if rd_bytes = 9 then
                             DIDSTRB <= '1';
                         end if;
-                        if cmd_bytes = 12 then
+                        if rd_bytes = 12 then
                             status.cmd <= '1';
                         end if;
                     end if;
@@ -152,7 +177,7 @@ begin
                         DIDSTRB <= '0';
                     end if;
 
-                    cmd_bytes := 0;
+                    rd_bytes := 0;
                 end if;
 
                 DIERRB <= '1'; -- TODO

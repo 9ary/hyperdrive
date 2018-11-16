@@ -42,8 +42,6 @@ package components is
         );
     end component;
 
-    type di_cmd_t is array(11 downto 0) of std_logic_vector(7 downto 0);
-
     type di_status_t is record
         cmd : std_logic;
         reset : std_logic;
@@ -57,6 +55,7 @@ package components is
         set_status : std_logic;
         write_data : std_logic_vector(7 downto 0);
         write_enable : std_logic;
+        read_enable : std_logic;
     end record;
 
     component di
@@ -65,7 +64,7 @@ package components is
 
             status : out di_status_t;
             ctrl : in di_ctrl_t;
-            cmd : out di_cmd_t; -- Command buffer
+            read_data : out std_logic_vector(7 downto 0);
 
             -- Control signals
             DIHSTRB : in std_logic; -- Host strobe

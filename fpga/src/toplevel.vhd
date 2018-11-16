@@ -47,7 +47,7 @@ architecture Behavioral of hyperdrive is
 
     signal di_status : di_status_t;
     signal di_ctrl : di_ctrl_t;
-    signal di_cmd : di_cmd_t;
+    signal di_read_data : std_logic_vector(7 downto 0);
 
     signal host_data_in : std_logic_vector(7 downto 0);
     signal host_data_out : std_logic_vector(7 downto 0);
@@ -73,7 +73,7 @@ begin
         clk => clk,
         status => di_status,
         ctrl => di_ctrl,
-        cmd => di_cmd,
+        read_data => di_read_data,
         DIHSTRB => DIHSTRB,
         DIDIR => DIDIR,
         DIBRK => DIBRK,
@@ -106,12 +106,11 @@ begin
             write
         );
         variable state : state_t;
-
-        variable read_count : natural range 0 to 12;
     begin
         if rising_edge(clk) then
             di_ctrl.set_status <= '0';
             di_ctrl.write_enable <= '0';
+            di_ctrl.read_enable <= '0';
             host_data_out <= x"FF";
             host_push <= '0';
 
@@ -139,9 +138,9 @@ begin
                             if host_data_in = x"00" then
                                 state := read;
                                 -- First byte of the command here
-                                host_data_out <= di_cmd(0);
+                                host_data_out <= di_read_data;
+                                di_ctrl.read_enable <= '1';
                                 host_push <= '1';
-                                read_count := 1;
                             else
                                 di_ctrl.status.cmd <= host_data_in(0);
                                 di_ctrl.status.reset <= host_data_in(1);
@@ -153,10 +152,11 @@ begin
                             end if;
 
                         when read =>
-                            host_data_out <= di_cmd(read_count);
+                            -- TODO needs some kind of synchronization/separation between
+                            -- reading the ISR and reading FIFO data
+                            host_data_out <= di_read_data;
+                            di_ctrl.read_enable <= '1';
                             host_push <= '1';
-                            read_count := read_count + 1;
-                            -- Overreading is undefined behavior
 
                         when write =>
                             di_ctrl.write_data <= host_data_in;
