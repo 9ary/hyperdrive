@@ -6,6 +6,7 @@ library work;
 package components is
     component std_fifo
         generic (
+            constant fallthrough : boolean := false;
             constant data_width : positive := 8;
             constant fifo_depth : positive := 256
         );

@@ -4,6 +4,7 @@ use ieee.numeric_std.all;
 
 entity std_fifo is
     generic (
+        constant fallthrough : boolean := false;
         constant data_width : positive := 8;
         constant fifo_depth : positive := 256
     );
@@ -49,7 +50,9 @@ begin
 
                 if (rd_en = '1') then
                     if ((looped = true) or (head /= tail)) then
-                        dout <= memory(tail);
+                        if not fallthrough then
+                            dout <= memory(tail);
+                        end if;
 
                         if (tail = fifo_depth - 1) then
                             tail := 0;
@@ -71,6 +74,10 @@ begin
                             head := head + 1;
                         end if;
                     end if;
+                end if;
+
+                if fallthrough then
+                    dout <= memory(tail);
                 end if;
 
                 if (head = tail) then
