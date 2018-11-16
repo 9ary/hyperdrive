@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import signal
 import struct
 import sys
 
@@ -10,6 +11,8 @@ STATUS_RESET = 1 << 1
 STATUS_BREAK = 1 << 2
 STATUS_COVER = 1 << 3
 # TODO error
+
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
         open(sys.argv[1], "rb") as gcm:
@@ -32,7 +35,7 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
     spi.SetDirection(0b11010111)
 
     while True:
-        #spi.WaitIO(True)
+        spi.WaitIO(True)
         status, cmd = hyperdrive_read()
 
         setstatus = 0
