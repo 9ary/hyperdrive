@@ -6,7 +6,8 @@ entity std_fifo is
     generic (
         constant fallthrough : boolean := false;
         constant data_width : positive := 8;
-        constant fifo_depth : positive := 256
+        constant fifo_depth : positive := 256;
+        constant almost_full_thresh : positive := 4
     );
     port (
         clk : in std_logic;
@@ -90,7 +91,7 @@ begin
                     empty <= '0';
                     full <= '0';
 
-                    if (head - tail) rem fifo_depth <= 4 then
+                    if (tail - head) mod fifo_depth <= almost_full_thresh then
                         almost_full <= '1';
                     else
                         almost_full <= '0';

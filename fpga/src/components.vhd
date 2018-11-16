@@ -8,7 +8,8 @@ package components is
         generic (
             constant fallthrough : boolean := false;
             constant data_width : positive := 8;
-            constant fifo_depth : positive := 256
+            constant fifo_depth : positive := 256;
+            constant almost_full_thresh : positive := 4
         );
         port (
             clk : in std_logic;

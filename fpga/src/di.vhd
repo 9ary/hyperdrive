@@ -56,7 +56,8 @@ begin
     rd_buf : std_fifo generic map (
         fallthrough => true,
         data_width => 8,
-        fifo_depth => 2 * 1024
+        fifo_depth => 2 * 1024,
+        almost_full_thresh => 4
     ) port map (
         clk => clk,
         rst => rd_buf_rst,
