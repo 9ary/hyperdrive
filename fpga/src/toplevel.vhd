@@ -114,7 +114,7 @@ begin
             host_data_out <= x"FF";
             host_push <= '0';
 
-            int <= di_status.cmd or di_status.reset or di_status.err;
+            int <= di_status.cmd or di_status.reset or di_status.break;
 
             if host_enable = '0' then
                 state := idle;
