@@ -10,7 +10,7 @@ STATUS_CMD_READY = 1 << 0
 STATUS_RESET = 1 << 1
 STATUS_BREAK = 1 << 2
 STATUS_COVER = 1 << 3
-# TODO error
+STATUS_ERROR = 1 << 4
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 

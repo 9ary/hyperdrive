@@ -87,6 +87,7 @@ begin
     process (clk)
         variable restarting : std_logic;
         variable lid : std_logic;
+        variable err : std_logic;
 
         variable rd_bytes : natural range 0 to 12;
 
@@ -115,7 +116,7 @@ begin
 
                 if DIRSTB_sync = '0' then
                     status.reset <= '1';
-                    status.err <= '0';
+                    err := '1'; -- No error
                     lid := '1'; -- Open by default
                 elsif DIBRK_sync = '1' then
                     status.break <= '1';
@@ -137,7 +138,7 @@ begin
                         restarting := '0';
                     end if;
                     lid := lid xor ctrl.status.lid;
-                    -- TODO error
+                    err := err xor ctrl.status.err;
                 end if;
 
                 if DIDIR_sync = '0' then
@@ -184,11 +185,12 @@ begin
                     rd_bytes := 0;
                 end if;
 
-                DIERRB <= '1'; -- TODO
                 DICOVER <= lid;
+                DIERRB <= err;
             end if;
 
             status.lid <= lid;
+            status.err <= err;
         end if;
     end process;
 
