@@ -155,11 +155,12 @@ begin
                         rd_buf_wr_en <= '1';
                         rd_bytes := rd_bytes + 1;
 
-                        if rd_bytes = 9 then
-                            DIDSTRB <= '1';
-                        end if;
                         if rd_bytes = 12 then
                             status.cmd <= '1';
+                        end if;
+
+                        if xfer_type /= read and rd_bytes = xfer_length + 12 then
+                            rd_bytes := to_unsigned(0, 32);
                         end if;
 
                         if rd_bytes = 1 then
@@ -177,9 +178,6 @@ begin
                         end if;
                         if xfer_type = write and rd_bytes > 8 and rd_bytes <= 12 then
                             xfer_length := xfer_length(23 downto 0) & unsigned(DID_sync);
-                        end if;
-                        if xfer_type /= read and rd_bytes = xfer_length + 12 then
-                            rd_bytes := to_unsigned(0, 32);
                         end if;
                     end if;
 
