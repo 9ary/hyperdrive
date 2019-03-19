@@ -108,7 +108,7 @@ with mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB) as spi, \
             continue
 
         else:
-            print(f"Unhandled command 0x{cmd[0]:0{8}X} 0x{cmd[1]:0{8}X} 0x{cmd[2]:0{8}X}")
+            print(f"Unhandled command 0x{cmd[0]:08X} 0x{cmd[1]:08X} 0x{cmd[2]:08X}")
             sys.exit(1)
 
         hyperdrive_write(setstatus, write_buf)
