@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# This script requires my personal fork of libmpsse
+# https://github.com/9ary/libmpsse
 
 import binascii
 import signal
